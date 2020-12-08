@@ -32,5 +32,8 @@
     <string name="label_active_duration">Active Duration : </string>
 
     <string name="label_zero">0</string>
+    <string name="title_location_permission">Location Permission</string>
+    <string name="text_location_permission">We need location permission to access bluetooth</string>
+    <string name="ok">Ok</string>
 
 </resources>
