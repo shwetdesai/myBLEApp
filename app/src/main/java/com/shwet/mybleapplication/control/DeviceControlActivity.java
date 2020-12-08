@@ -42,7 +42,7 @@ public class DeviceControlActivity extends AppCompatActivity {
     public static final String EXTRAS_DEVICE_ADDRESS = "DEVICE_ADDRESS";
     private final static String TAG = "DeviceControl";
     private TextView mConnectionState;
-    private TextView mDataField,mDataFieldNew,mDataFieldNo;
+    private TextView mDataField,mSessionId,mActiveDuration;
     private String mDeviceName;
     private String mDeviceAddress;
     private ExpandableListView mGattServicesList;
@@ -53,6 +53,7 @@ public class DeviceControlActivity extends AppCompatActivity {
     private BluetoothGattCharacteristic mNotifyCharacteristic;
     private final String LIST_NAME = "NAME";
     private final String LIST_UUID = "UUID";
+    private static int sessionId;
 
     private DatabaseHelper databaseHelper;
     private long startTime;
@@ -96,6 +97,7 @@ public class DeviceControlActivity extends AppCompatActivity {
             if (BluetoothLeService.ACTION_GATT_CONNECTED.equals(action)) {
                 mConnected = true;
                 updateConnectionState(R.string.connected);
+                Log.i(TAG,"Connected");
                 databaseHelper.addActivities(mDeviceAddress,"Connected");
                 invalidateOptionsMenu();
 
@@ -109,8 +111,7 @@ public class DeviceControlActivity extends AppCompatActivity {
                 databaseHelper.addActivities(mDeviceAddress,"Disconnected");
 
                 long duration = System.currentTimeMillis() - startTime;
-                int id = databaseHelper.getLastSessionId(mDeviceAddress);
-                databaseHelper.addSession(""+id,mDeviceAddress,""+duration);
+                Log.i(TAG,"Add Session "+databaseHelper.addSession(""+sessionId,mDeviceAddress,""+duration));
 
 
                 updateConnectionState(R.string.disconnected);
@@ -203,11 +204,21 @@ public class DeviceControlActivity extends AppCompatActivity {
         mDeviceAddress = intent.getStringExtra(EXTRAS_DEVICE_ADDRESS);
 
         ((TextView) findViewById(R.id.device_address)).setText(mDeviceAddress);
+        mSessionId = findViewById(R.id.session_id);
+        mActiveDuration = findViewById(R.id.active_duration);
         mGattServicesList = (ExpandableListView) findViewById(R.id.gatt_services_list);
         mGattServicesList.setOnChildClickListener(servicesListClickListner);
         mConnectionState = (TextView) findViewById(R.id.connection_state);
         mDataField = (TextView) findViewById(R.id.data_value);
         databaseHelper = new DatabaseHelper(getApplicationContext());
+        int newSessionStatus = databaseHelper.sessionCheck(mDeviceAddress);
+        Log.i(TAG,"Session Status " + newSessionStatus);
+        String[] data = databaseHelper.getLastSessionId(mDeviceAddress,newSessionStatus);
+        sessionId = Integer.parseInt(data[0]);
+        mActiveDuration.setText(""+data[1]);
+        mSessionId.setText(""+sessionId);
+        Intent gattServiceIntent = new Intent(this, BluetoothLeService.class);
+        bindService(gattServiceIntent, mServiceConnection, BIND_AUTO_CREATE);
     }
 
     @Override
@@ -219,7 +230,7 @@ public class DeviceControlActivity extends AppCompatActivity {
             Log.d(TAG, "Connect request result=" + result);
         }
         startTime = System.currentTimeMillis();
-        
+
     }
 
     @Override
@@ -228,8 +239,8 @@ public class DeviceControlActivity extends AppCompatActivity {
         Log.i(TAG,"onPause");
         if(mConnected){
             long duration = System.currentTimeMillis() - startTime;
-            int id = databaseHelper.getLastSessionId(mDeviceAddress);
-            databaseHelper.addSession(""+id,mDeviceAddress,""+duration);
+
+            Log.i(TAG,"Add Session "+databaseHelper.addSession(""+sessionId,mDeviceAddress,""+duration));
         }
         unregisterReceiver(mGattUpdateReceiver);
 
@@ -242,8 +253,7 @@ public class DeviceControlActivity extends AppCompatActivity {
 
         if(mConnected){
             long duration = System.currentTimeMillis() - startTime;
-            int id = databaseHelper.getLastSessionId(mDeviceAddress);
-            databaseHelper.addSession(""+id,mDeviceAddress,""+duration);
+            Log.i(TAG,"Add Session "+databaseHelper.addSession(""+sessionId,mDeviceAddress,""+duration));
         }
 
         unbindService(mServiceConnection);

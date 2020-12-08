@@ -28,5 +28,9 @@
     <string name="label_device_address">Device Address : </string>
     <string name="label_state">State : </string>
     <string name="label_data">Data : </string>
+    <string name="label_session_id">Session Id : </string>
+    <string name="label_active_duration">Active Duration : </string>
+
+    <string name="label_zero">0</string>
 
 </resources>
